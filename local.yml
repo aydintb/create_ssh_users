@@ -1,7 +1,0 @@
----
-   - hosts: all
-     gather_facts: no
-
-     tasks:
-       - include ssh_user.yml
-       
