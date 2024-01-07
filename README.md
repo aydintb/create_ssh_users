@@ -4,7 +4,7 @@ run:
 
 ```bash
 
-ansible-playbook ssh_user.yaml -K
+ansible-playbook ssh_user.yml -K
 
 or
 
