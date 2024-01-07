@@ -3,15 +3,14 @@
 run:
 
 ```bash
+
 ansible-playbook ssh_user.yaml -K
+
+or
+
+ansible-pull -U https://github.com/aydintb/create_ssh_users.git
+
 ```
-
-----------------------------------------------------------------------------------
-
-```bash
-git remote add origin git@github.com:aydintb/create_ssh_users.git
-```
-
 
 ----------------------------------------------------------------------------------
 
