@@ -1,0 +1,155 @@
+---
+
+- hosts: all
+  become: true
+  vars:
+    ssh_users:     # normal sistem kullanicilari
+    - { user: 'ansible_robot',  groups: ['root'],                                 ssh_key: 'ansible',     ssh_local_path: '~/.ssh/', sudo_pass_remove: 'yes'} 
+    - { user: 'aydin',          groups: ['developer', 'cpp', 'scala'],            ssh_key: 'id_ed25519',  ssh_local_path: '~/.ssh/', sudo_pass_remove: 'no'}
+    - { user: 'deniz',          groups: ['developer', 'test', 'math', 'english'], ssh_key: 'ansible',     ssh_local_path: '~/.ssh/', sudo_pass_remove: 'no'}
+ 
+    installs:
+      - tmux
+      - mc
+      - nala
+
+  pre_tasks:
+
+  - name: update repository index for ALL hosts
+    tags: always
+    package:
+      update_cache: yes
+
+  tasks:
+
+
+  - name: Install packages on Linux
+    ansible.builtin.package:
+      name: "{{ installs }}"
+      state: present
+    when: ansible_pkg_mgr in ['apt', 'yum', 'dnf', 'zypper', 'apk', 'pkg_add', 'emerge']
+
+
+
+# create groups defined above if not exists 
+  - name: Create groups
+    tags: always
+    become: true
+    ansible.builtin.group:
+      name: "{{ item }}"
+    with_items: "{{ ssh_users | map(attribute='groups') | list | flatten }}"
+
+
+#  - name: Check if groups exist
+#    ansible.builtin.command: getent group "{{ item }}"
+#    register: group_check_results
+#    ignore_errors: true
+#    with_items: "{{ ssh_users | map(attribute='groups') | list | flatten | unique }}"
+#    changed_when: false
+
+#  - name: Create groups
+#    ansible.builtin.group:
+#      name: "{{ item }}"
+#    with_items: "{{ ssh_users | map(attribute='groups') | list | flatten | unique }}"
+#    when: item not in group_check_results.results | map(attribute='item') | list
+
+
+# create users with loop and put them into groups
+  - name: "Create user accounts"
+    tags: always
+    user:
+      name: "{{ item.user }}"
+      groups: "{{ item.groups }}"
+    with_items: "{{ ssh_users }}"
+
+  - name: "add SSH keys to authorized_keys"
+    tags: always
+    authorized_key:
+      user: "{{ item.user }}"
+      key: "{{ lookup('file', item.ssh_local_path + item.ssh_key + '.pub') }}"
+    with_items: "{{ ssh_users }}"
+  
+    
+# allow all root group users to sudo without password      
+  - name: "Allow admin users to sudo without a password"
+    tags: always
+    lineinfile:
+      dest: "/etc/sudoers" # path: in version 2.3
+      state: "present"
+      regexp: "^%admin"
+      line: "%admin ALL=(ALL) NOPASSWD: ALL"
+
+# create sudoer files
+  - name: Create sudoers file if sudo_pass_remove is 'yes'
+    tags: always
+    ansible.builtin.template:
+      src: "files/sudoers_template.j2"
+      dest: "/etc/sudoers.d/{{ item.user }}"
+      owner: root
+      group: root
+      mode: '0440'
+    loop: "{{ ssh_users }}"
+    when: item.sudo_pass_remove == 'yes'
+
+
+  - name: Remove sudoers file if sudo_pass_remove is 'no'
+    tags: always
+    ansible.builtin.file:
+      path: "/etc/sudoers.d/{{ item.user }}"
+      state: absent
+    loop: "{{ ssh_users }}"
+    when: item.sudo_pass_remove == 'no'
+            
+#  - name: Copy sudoers template file
+#    ansible.builtin.template:
+#      src: files/sudoers_template.j2
+#      dest: /etc/sudoers.d/{{ ssh_users.user }}
+#      owner: root
+#      group: root
+#      mode: '0440'
+#    become: true
+
+#
+# CONFIG FILES --------------------------------------------------------------------
+#
+
+
+# create default TMUX config for all users
+  - name: Tmux config
+    tags: always
+    ansible.builtin.copy:
+      src: "tmux.txt"
+      dest: "{{ '/home/' + item.user + '/.tmux.conf' }}"
+      owner: "{{ item.user }}"
+      group: "{{ item.user }}"
+      mode: '0440'
+    loop: "{{ ssh_users }}"
+
+#
+# SSH SECURITY --------------------------------------------------------------------
+#
+
+# Disable SSH password authentication and enable public key authentication
+  - name: Update SSH configuration
+    tags: always
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+      state: present
+      backup: yes
+    when: remote_user_olustu.changed|default(false)
+    with_items:
+      - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+      - { regexp: '^#?ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication no' }
+#      - { regexp: '^#?UsePAM', line: 'UsePAM no' }
+      - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
+    notify: restart sshd
+
+  handlers:
+    - name: restart sshd
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+
+
