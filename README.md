@@ -6,9 +6,6 @@ run:
 
 ansible-playbook ssh_user.yml -K
 
-or
-
-ansible-pull -U https://github.com/aydintb/create_ssh_users.git
 
 ```
 
