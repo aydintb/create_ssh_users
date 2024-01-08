@@ -3,11 +3,6 @@
 - hosts: all
   become: true
   vars:
-    ssh_users:     # normal sistem kullanicilari
-    - { user: 'ansible_robot',  groups: ['root'],                                 ssh_key: 'ansible',     ssh_local_path: '~/.ssh/', sudo_pass_remove: 'yes'} 
-    - { user: 'aydin',          groups: ['developer', 'cpp', 'scala'],            ssh_key: 'id_ed25519',  ssh_local_path: '~/.ssh/', sudo_pass_remove: 'no'}
-    - { user: 'deniz',          groups: ['developer', 'test', 'math', 'english'], ssh_key: 'ansible',     ssh_local_path: '~/.ssh/', sudo_pass_remove: 'no'}
- 
     installs:
       - tmux
       - mc
@@ -22,7 +17,9 @@
       update_cache: yes
 
   tasks:
-
+  - name: Include user definitions
+    include_vars:
+      file: users.yml
 
   - name: Install packages on Linux
     ansible.builtin.package:
@@ -38,7 +35,7 @@
     become: true
     ansible.builtin.group:
       name: "{{ item }}"
-    with_items: "{{ ssh_users | map(attribute='groups') | list | flatten }}"
+    with_items: "{{ ssh_users | map(attribute='groups') | list | flatten | unique }}"
 
 
 #  - name: Check if groups exist

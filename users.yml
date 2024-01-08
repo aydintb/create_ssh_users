@@ -1,0 +1,25 @@
+ssh_users:
+  - user: 'ansible_robot'
+    groups: ['root']
+    ssh_key: 'ansible'
+    ssh_local_path: '~/.ssh/'
+    sudo_pass_remove: 'yes'
+
+  - user: 'atb'
+    groups: ['developer', 'cpp', 'scala']
+    ssh_key: 'id_ed25519'
+    ssh_local_path: '~/.ssh/'
+    sudo_pass_remove: 'yes'
+
+  - user: 'aydin'
+    groups: ['developer', 'cpp', 'scala']
+    ssh_key: 'id_ed25519'
+    ssh_local_path: '~/.ssh/'
+    sudo_pass_remove: 'yes'
+
+  - user: 'deniz'
+    groups: ['developer', 'test', 'math', 'english']
+    ssh_key: 'ansible'
+    ssh_local_path: '~/.ssh/'
+    sudo_pass_remove: 'no'
+
