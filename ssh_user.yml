@@ -29,9 +29,9 @@
     when: ansible_pkg_mgr in ['apt', 'yum', 'dnf', 'zypper', 'apk', 'pkg_add', 'emerge']
 
 
-  - name: Display ssh_users content
-    debug:
-      var: ssh_users
+#  - name: Display ssh_users content
+#    debug:
+#      var: ssh_users
       
 
 # create groups defined above if not exists 
