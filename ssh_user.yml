@@ -12,6 +12,7 @@
       - tmux
       - mc
       - nala
+      - htop
 
   pre_tasks:
 
