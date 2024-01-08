@@ -8,7 +8,11 @@
       - mc
       - nala
       - htop
+    users_file: "usergroups/users.yml"
 
+  vars_files:
+    - "{{ users_file }}"
+        
   pre_tasks:
 
   - name: update repository index for ALL hosts
@@ -17,9 +21,6 @@
       update_cache: yes
 
   tasks:
-  - name: Include user definitions
-    include_vars:
-      file: users.yml
 
   - name: Install packages on Linux
     ansible.builtin.package:
@@ -28,6 +29,10 @@
     when: ansible_pkg_mgr in ['apt', 'yum', 'dnf', 'zypper', 'apk', 'pkg_add', 'emerge']
 
 
+  - name: Display ssh_users content
+    debug:
+      var: ssh_users
+      
 
 # create groups defined above if not exists 
   - name: Create groups
